@@ -1,0 +1,23 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Ticket {
+  id              String   @id @default(uuid())
+  numero          Int      @unique
+  clienteNome     String   
+  assunto         String   
+  dispositivo     String?  
+  descricao       String?  
+  status          String   @default("A_FAZER")
+  dataCriacao     DateTime @default(now())
+  dataAtualizacao DateTime @updatedAt
+  dataConclusao   DateTime?
+
+  @@map("tickets")
+}
