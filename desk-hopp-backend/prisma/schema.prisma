@@ -7,17 +7,57 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// 1. Tabela de Empresas
+model Empresa {
+  id           String        @id @default(uuid())
+  nome         String        @unique // Ex: "NSA MATRIZ (RECAUCA)"
+  cnpj         String?
+  dataCriacao  DateTime      @default(now())
+  
+  // Relacionamentos: Uma empresa pode ter vários dispositivos e vários tickets
+  dispositivos Dispositivo[]
+  tickets      Ticket[]
+
+  @@map("empresas")
+}
+
+// 2. Tabela de Inventário / Dispositivos
+model Dispositivo {
+  id           String   @id @default(uuid())
+  nome         String   // Ex: "SRVSISTEMA"
+  tipo         String   // Ex: "Servidor", "Notebook", "Roteador"
+  ip           String?  
+  status       String   @default("ONLINE")
+  dataCriacao  DateTime @default(now())
+
+  // Relacionamento com Empresa: Todo dispositivo OBRIGATORIAMENTE pertence a uma empresa
+  empresaId    String
+  empresa      Empresa  @relation(fields: [empresaId], references: [id])
+
+  // Relacionamento com Tickets: Um dispositivo pode estar atrelado a vários chamados
+  tickets      Ticket[]
+
+  @@map("dispositivos")
+}
+
+// 3. Tabela de Tickets (Atualizada para usar chaves estrangeiras)
 model Ticket {
-  id              String   @id @default(uuid())
-  numero          Int      @unique
-  clienteNome     String   
+  id              String       @id @default(uuid())
+  numero          Int          @unique
   assunto         String   
-  dispositivo     String?  
   descricao       String?  
-  status          String   @default("A_FAZER")
-  dataCriacao     DateTime @default(now())
-  dataAtualizacao DateTime @updatedAt
+  status          String       @default("A_FAZER")
+  dataCriacao     DateTime     @default(now())
+  dataAtualizacao DateTime     @updatedAt
   dataConclusao   DateTime?
+
+  // Chave estrangeira que conecta o ticket a uma Empresa obrigatória
+  empresaId       String
+  empresa         Empresa      @relation(fields: [empresaId], references: [id])
+
+  // Chave estrangeira opcional que conecta o ticket a um Dispositivo específico
+  dispositivoId   String?      
+  dispositivo     Dispositivo? @relation(fields: [dispositivoId], references: [id])
 
   @@map("tickets")
 }

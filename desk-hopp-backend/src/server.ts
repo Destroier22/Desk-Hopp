@@ -1,19 +1,21 @@
 import express from 'express';
+import ticketRoutes from '../src/routes/TicketRoutes'; // Caso sua pasta se chame 'routers', lembre de ajustar o nome do caminho
 
 const app = express();
 const PORT = 3000;
 
-// Configura o servidor para aceitar dados no formato JSON
+// Configura o middleware para o Express compreender corpos de requisição em formato JSON
 app.use(express.json());
 
-// Criando a nossa primeira rota de teste
+// Injeta as rotas de gerenciamento de Tickets dentro da API
+app.use(ticketRoutes);
+
 app.get('/', (req, res) => {
   res.json({ 
-    mensagem: "Bem-vindo à API do Desk Hopp! Servidor rodando com sucesso. 🚀" 
+    mensagem: "API do Desk Hopp rodando com suporte a rotas e modelo relacional de TI! 🚀" 
   });
 });
 
-// Inicializa o servidor na porta 3000
 app.listen(PORT, () => {
   console.log(`=========================================`);
   console.log(`  Desk Hopp Back-end Inicializado! 🔥     `);

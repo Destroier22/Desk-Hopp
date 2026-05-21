@@ -2,35 +2,52 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+// Definindo a estrutura de dados que o Service espera receber para criar um Ticket
+interface CriarTicketDTO {
+  assunto: string;
+  descricao?: string;
+  empresaId: string;
+  dispositivoId?: string;
+}
+
 export class TicketService {
   
-  // 1. Criar um novo Ticket (Simulando a "Abertura de Ticket" do Milvus)
-  async criarTicket(dados: { clienteNome: string; assunto: string; dispositivo?: string; descricao?: string }) {
-    // Vamos gerar um número sequencial simples para o ticket
+  // 1. Criar um novo Ticket conectado à Empresa e ao Dispositivo por ID
+  async criarTicket(dados: CriarTicketDTO) {
+    // Gera o número sequencial simples para o chamado
     const totalTickets = await prisma.ticket.count();
-    const proximoNumero = 11241 + totalTickets; // Começando do padrão das suas imagens
+    const proximoNumero = 11241 + totalTickets;
 
     return await prisma.ticket.create({
       data: {
         numero: proximoNumero,
-        clienteNome: dados.clienteNome,
         assunto: dados.assunto,
-        dispositivo: dados.dispositivo,
         descricao: dados.descricao,
-        status: "A_FAZER" // Todo ticket nasce no "A Fazer"
+        status: "A_FAZER",
+        empresaId: dados.empresaId,
+        dispositivoId: dados.dispositivoId || null
+      },
+      // Faz o Prisma retornar os dados da empresa e dispositivo juntos no resultado do cadastro
+      include: {
+        empresa: true,
+        dispositivo: true
       }
     });
   }
 
-  // 2. Buscar os Tickets organizados para o Kanban
+  // 2. Buscar os Tickets organizados para o Kanban incluindo dados relacionais
   async obterFluxoKanban() {
-    // Pega o início do dia de hoje (00:00:00)
     const inicioDoDia = new Date();
     inicioDoDia.setHours(0, 0, 0, 0);
 
-    const tickets = await prisma.ticket.findMany();
+    // Buscamos os tickets trazendo junto as informações da Empresa e do Dispositivo cadastrados neles
+    const tickets = await prisma.ticket.findMany({
+      include: {
+        empresa: true,
+        dispositivo: true
+      }
+    });
 
-    // Filtra e agrupa os tickets exatamente como você planejou para as colunas
     return {
       aFazer: tickets.filter(t => t.status === "A_FAZER"),
       atendendo: tickets.filter(t => t.status === "ATENDENDO"),
@@ -41,7 +58,7 @@ export class TicketService {
     };
   }
 
-  // 3. Atualizar o Status (Quando arrastar o card no Front-end)
+  // 3. Atualizar o Status (Movimentação de colunas)
   async atualizarStatus(id: string, novoStatus: string) {
     let dataConclusao: Date | null = null;
 
