@@ -1,18 +1,23 @@
 import express from 'express';
-import ticketRoutes from '../src/routes/TicketRoutes'; // Caso sua pasta se chame 'routers', lembre de ajustar o nome do caminho
+import cors from 'cors';
+import ticketRoutes from '../src/routes/TicketRoutes';
 
 const app = express();
 const PORT = 3000;
 
-// Configura o middleware para o Express compreender corpos de requisição em formato JSON
+// 1. Permite que o Front-end (React) aceda aos dados deste Back-end com segurança
+app.use(cors());
+
+// 2. Configura o middleware para o Express compreender corpos de requisição em formato JSON
 app.use(express.json());
 
-// Injeta as rotas de gerenciamento de Tickets dentro da API
+// 3. Injeta as rotas de gerenciamento de Tickets e Inventário dentro da API
 app.use(ticketRoutes);
 
+// Rota inicial apenas para teste rápido no navegador
 app.get('/', (req, res) => {
   res.json({ 
-    mensagem: "API do Desk Hopp rodando com suporte a rotas e modelo relacional de TI! 🚀" 
+    mensagem: "API do Desk Hopp rodando com suporte a rotas, CORS e modelo relacional de TI! 🚀" 
   });
 });
 

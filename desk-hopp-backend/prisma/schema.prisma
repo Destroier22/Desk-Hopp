@@ -61,3 +61,7 @@ model Ticket {
 
   @@map("tickets")
 }
+model Categoria {
+  id    String @id @default(uuid())
+  nome  String @unique
+}
