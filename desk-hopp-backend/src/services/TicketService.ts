@@ -2,17 +2,20 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// Definindo a estrutura de dados que o Service espera receber para criar um Ticket
+// Interface ajustada para receber a categoriaId obrigatória no fluxo de criação
 interface CriarTicketDTO {
   assunto: string;
   descricao?: string;
   empresaId: string;
   dispositivoId?: string;
+  categoriaId: string; // ⚡ Adicionado de acordo com o novo schema
 }
 
 export class TicketService {
   
-  // 1. Criar um novo Ticket conectado à Empresa e ao Dispositivo por ID
+  /**
+   * 1. Criar um novo Ticket conectado à Empresa, Categoria e Dispositivo por ID
+   */
   async criarTicket(dados: CriarTicketDTO) {
     // Gera o número sequencial simples para o chamado
     const totalTickets = await prisma.ticket.count();
@@ -25,26 +28,32 @@ export class TicketService {
         descricao: dados.descricao,
         status: "A_FAZER",
         empresaId: dados.empresaId,
-        dispositivoId: dados.dispositivoId || null
+        dispositivoId: dados.dispositivoId || null,
+        categoriaId: dados.categoriaId // ⚡ Gravando a categoria obrigatória
       },
-      // Faz o Prisma retornar os dados da empresa e dispositivo juntos no resultado do cadastro
+      // Retorna os dados agregados para o solicitante
       include: {
         empresa: true,
-        dispositivo: true
+        dispositivo: true,
+        categoria: true
       }
     });
   }
 
-  // 2. Buscar os Tickets organizados para o Kanban incluindo dados relacionais
+  /**
+   * 2. Buscar os Tickets organizados para o Kanban incluindo dados relacionais
+   * Filtra os concluídos do dia com base no carimbo correto de 'finalizadoEm'.
+   */
   async obterFluxoKanban() {
     const inicioDoDia = new Date();
     inicioDoDia.setHours(0, 0, 0, 0);
 
-    // Buscamos os tickets trazendo junto as informações da Empresa e do Dispositivo cadastrados neles
+    // Buscamos os tickets trazendo junto as informações das tabelas vinculadas
     const tickets = await prisma.ticket.findMany({
       include: {
         empresa: true,
-        dispositivo: true
+        dispositivo: true,
+        categoria: true
       }
     });
 
@@ -53,24 +62,28 @@ export class TicketService {
       atendendo: tickets.filter(t => t.status === "ATENDENDO"),
       pausados: tickets.filter(t => t.status === "PAUSADOS"),
       concluidosDoDia: tickets.filter(t => 
-        t.status === "CONCLUIDO" && t.dataConclusao && t.dataConclusao >= inicioDoDia
+        // ⚡ Corrigido: Agora filtra comparando com a propriedade correta 'finalizadoEm'
+        t.status === "CONCLUIDO" && t.finalizadoEm && new Date(t.finalizadoEm) >= inicioDoDia
       )
     };
   }
 
-  // 3. Atualizar o Status (Movimentação de colunas)
+  /**
+   * 3. Atualizar o Status (Movimentação de colunas simplificada)
+   * ⚡ Linha 56 corrigida de 'dataConclusao' para 'finalizadoEm', casando perfeitamente com o Banco.
+   */
   async atualizarStatus(id: string, novoStatus: string) {
-    let dataConclusao: Date | null = null;
+    let finalizadoEm: Date | null = null; // ⚡ Ajustado o nome da variável
 
     if (novoStatus === "CONCLUIDO") {
-      dataConclusao = new Date();
+      finalizadoEm = new Date();
     }
 
     return await prisma.ticket.update({
       where: { id },
       data: {
         status: novoStatus,
-        dataConclusao: dataConclusao
+        finalizadoEm: finalizadoEm // ⚡ Linha 56 Corrigida de forma definitiva!
       }
     });
   }

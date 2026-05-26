@@ -44,10 +44,10 @@ router.get('/empresas/:empresaId/dispositivos', async (req, res) => {
  */
 router.get('/categorias', async (req, res) => {
   try {
-    const categorias = await prisma.categoria.findMany({
+    const categories = await prisma.categoria.findMany({
       orderBy: { nome: 'asc' }
     });
-    res.json(categorias);
+    res.json(categories);
   } catch (error) {
     console.error("Erro ao buscar categorias:", error);
     res.status(500).json({ erro: "Erro ao buscar categorias" });
@@ -56,8 +56,8 @@ router.get('/categorias', async (req, res) => {
 
 /**
  * 4. ROTA ESTRUTURAL: Buscar dados organizados para as colunas do Kanban
- * 📝 ATUALIZAÇÃO: Calcula o tempo "ao vivo" para chamados em andamento
- * durante o Refresh e traz o array de 'apontamentos' e a data de fechamento.
+ * Calculates o tempo "ao vivo" para chamados em andamento durante o Refresh,
+ * traz o array de 'apontamentos' e filtra corretamente as colunas.
  */
 router.get('/tickets/kanban', async (req, res) => {
   try {
@@ -65,6 +65,7 @@ router.get('/tickets/kanban', async (req, res) => {
       include: {
         empresa: true,
         dispositivo: true,
+        categoria: true, // ⚡ Adicionado para garantir o vínculo completo no Kanban
         apontamentos: {
           orderBy: { criadoEm: 'asc' } // Histórico em ordem cronológica
         }
@@ -109,6 +110,7 @@ router.get('/tickets/kanban', async (req, res) => {
 
 /**
  * 5. ROTA DE CRIAÇÃO: Cadastrar um novo Ticket no sistema
+ * ⚡ Atualizada para incluir obrigatoriamente a 'categoriaId' exigida pelo novo Schema.
  */
 router.post('/tickets', async (req, res) => {
   try {
@@ -130,10 +132,12 @@ router.post('/tickets', async (req, res) => {
         status: 'A_FAZER', // Todo chamado entra na triagem inicial
         empresaId,
         dispositivoId: dispositivoId || null,
+        categoriaId, // ⚡ Salvando a relação obrigatória da categoria
       },
       include: {
         empresa: true,
         dispositivo: true,
+        categoria: true,
         apontamentos: true
       }
     });
@@ -148,12 +152,12 @@ router.post('/tickets', async (req, res) => {
 /**
  * 6. ROTA DE TRANSIÇÃO DE STATUS, CRONÔMETRO E HISTÓRICO DE APONTAMENTO
  * PATCH /tickets/:id/status
- * 📝 ATUALIZAÇÃO: Gerencia o play, pause, acúmulo de tempo e grava a data finalizadoEm.
+ * ⚡ Atualizada e corrigida para usar o campo 'finalizadoEm' do modelo Ticket.
  */
 router.patch('/tickets/:id/status', async (req, res) => {
   try {
     const { id } = req.params;
-    const { novoStatus, texto } = req.body; // 'texto' é a justificativa do técnico
+    const { novoStatus, texto } = req.body; // 'texto' é a justificativa ou ação do técnico
 
     // 1. Valida se o status pertence ao fluxo permitido
     const statusValidos = ['A_FAZER', 'ATENDENDO', 'PAUSADOS', 'CONCLUIDO'];
@@ -199,7 +203,7 @@ router.patch('/tickets/:id/status', async (req, res) => {
       }
       tempoIniciadoEm = null; // Para o relógio
 
-      // Se moveu para concluído, crava o carimbo de data/hora atual
+      // Se moveu para concluído, crava o carimbo de data/hora atual no campo correto
       if (novoStatus === 'CONCLUIDO') {
         finalizadoEm = agora;
       }
@@ -218,11 +222,12 @@ router.patch('/tickets/:id/status', async (req, res) => {
           status: novoStatus,
           tempoIniciadoEm,
           totalSegundos,
-          finalizadoEm
+          finalizadoEm // ⚡ Salvando no campo correto alinhado ao Schema
         },
         include: {
           empresa: true,
           dispositivo: true,
+          categoria: true,
           apontamentos: true
         }
       }),
