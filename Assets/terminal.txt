@@ -1,0 +1,16 @@
+Iniciar servidor
+npm run dev 
+
+Manibular tabelas pelo prisma
+npx prisma studio
+
+Criar migration formal
+npx prisma migrate dev --name adicionar_controle_de_tempo
+
+Forçar regeneração do prisma
+npx prisma generate
+
+Restart no TicketsRoutes.ts
+F1 em cima do arquivo 
+TypeScript: Restart TS server
+Enter

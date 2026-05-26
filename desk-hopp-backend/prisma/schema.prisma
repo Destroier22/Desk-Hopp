@@ -1,5 +1,6 @@
+// --- CONFIGURAÇÃO DO MOTOR DO PRISMA ---
 datasource db {
-  provider = "sqlite"
+  provider = "sqlite" // Ou "postgresql" / "mysql", dependendo do seu ambiente
   url      = env("DATABASE_URL")
 }
 
@@ -7,61 +8,74 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// 1. Tabela de Empresas
+// --- MODELO 1: CLIENTES / EMPRESAS ---
 model Empresa {
   id           String        @id @default(uuid())
-  nome         String        @unique // Ex: "NSA MATRIZ (RECAUCA)"
-  cnpj         String?
-  dataCriacao  DateTime      @default(now())
+  nome         String        @unique
+  criadoEm     DateTime      @default(now())
   
-  // Relacionamentos: Uma empresa pode ter vários dispositivos e vários tickets
+  // Relações reversas do Prisma (Não geram colunas no banco físico)
   dispositivos Dispositivo[]
   tickets      Ticket[]
-
-  @@map("empresas")
 }
 
-// 2. Tabela de Inventário / Dispositivos
+// --- MODELO 2: ATIVOS / DISPOSITIVOS DE TI ---
 model Dispositivo {
-  id           String   @id @default(uuid())
-  nome         String   // Ex: "SRVSISTEMA"
-  tipo         String   // Ex: "Servidor", "Notebook", "Roteador"
-  ip           String?  
-  status       String   @default("ONLINE")
-  dataCriacao  DateTime @default(now())
+  id        String   @id @default(uuid())
+  nome      String   // Ex: "NOTEBOOK-FINANCEIRO", "SERVIDOR-PROD"
+  tipo      String   // Ex: "Notebook", "Servidor", "Impressora"
+  criadoEm  DateTime @default(now())
+  FinalizadoEm DateTime?
 
-  // Relacionamento com Empresa: Todo dispositivo OBRIGATORIAMENTE pertence a uma empresa
-  empresaId    String
-  empresa      Empresa  @relation(fields: [empresaId], references: [id])
-
-  // Relacionamento com Tickets: Um dispositivo pode estar atrelado a vários chamados
-  tickets      Ticket[]
-
-  @@map("dispositivos")
+  // Chave estrangeira ligando o ativo rigidamente à sua respectiva empresa
+  empresaId String
+  empresa   Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  
+  tickets   Ticket[]
 }
 
-// 3. Tabela de Tickets (Atualizada para usar chaves estrangeiras)
-model Ticket {
-  id              String       @id @default(uuid())
-  numero          Int          @unique
-  assunto         String   
-  descricao       String?  
-  status          String       @default("A_FAZER")
-  dataCriacao     DateTime     @default(now())
-  dataAtualizacao DateTime     @updatedAt
-  dataConclusao   DateTime?
-
-  // Chave estrangeira que conecta o ticket a uma Empresa obrigatória
-  empresaId       String
-  empresa         Empresa      @relation(fields: [empresaId], references: [id])
-
-  // Chave estrangeira opcional que conecta o ticket a um Dispositivo específico
-  dispositivoId   String?      
-  dispositivo     Dispositivo? @relation(fields: [dispositivoId], references: [id])
-
-  @@map("tickets")
-}
+// --- MODELO 3: CLASSIFICAÇÃO / CATEGORIAS ---
 model Categoria {
-  id    String @id @default(uuid())
-  nome  String @unique
+  id       String   @id @default(uuid())
+  nome     String   @unique // Ex: "Redes", "Hardware", "Sistemas"
+  criadoEm DateTime @default(now())
+}
+
+// --- MODELO 4: TICKETS / CHAMADOS ---
+model Ticket {
+  id              String        @id @default(uuid())
+  numero          Int           @unique // Protocolo gerado automaticamente com 5 dígitos
+  assunto         String
+  descricao       String?       // Detalhes iniciais abertos pelo solicitante
+  status          String        @default("A_FAZER") // Fluxo: A_FAZER, ATENDENDO, PAUSADOS, CONCLUIDO
+  criadoEm        DateTime      @default(now())
+
+  // Vínculo com a Empresa do Solicitante
+  empresaId       String
+  empresa         Empresa       @relation(fields: [empresaId], references: [id])
+
+  // Vínculo opcional com o Dispositivo/Ativo afetado
+  dispositivoId   String?
+  dispositivo     Dispositivo?  @relation(fields: [dispositivoId], references: [id])
+  
+  // --- ENGENHARIA DE SLA E CRONÔMETRO ---
+  tempoIniciadoEm DateTime?     // Guarda o timestamp exato de quando o técnico deu "Play"
+  totalSegundos   Int           @default(0) // Acumula o tempo total gasto somando todas as sessões
+
+  // --- NOVA RELAÇÃO: LINHA DO TEMPO DE APONTAMENTOS ---
+  // Um ticket pode ter vários apontamentos ordenados por histórico para o relatório final
+  apontamentos    Apontamento[]
+}
+
+// --- MODELO 5: HISTÓRICO DE INTERAÇÕES E APONTAMENTO DE HORAS ---
+model Apontamento {
+  id             String   @id @default(uuid())
+  texto          String   // Descrição técnica do que foi executado na respectiva sessão
+  segundosSessao Int      // Quantidade exata de segundos capturada pelo cronômetro nesta sessão específica
+  criadoEm       DateTime @default(now()) // Data e hora em que o apontamento foi registrado
+
+  // Chave estrangeira conectando o apontamento ao seu chamado pai
+  // O 'onDelete: Cascade' garante que se um ticket for deletado, o histórico dele limpa junto para não poluir o banco
+  ticketId       String
+  ticket         Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 }
