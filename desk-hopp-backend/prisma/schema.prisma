@@ -65,6 +65,7 @@ model Ticket {
   numero          Int           @unique // Protocolo gerado automaticamente (Ex: 5 dígitos)
   assunto         String
   descricao       String?       // Detalhes iniciais informados na abertura
+  solicitante     String
   status          String        @default("A_FAZER") // Fluxo: A_FAZER, ATENDENDO, PAUSADOS, CONCLUIDO
   criadoEm        DateTime      @default(now())
 

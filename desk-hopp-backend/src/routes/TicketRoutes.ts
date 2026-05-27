@@ -94,11 +94,18 @@ router.get('/tickets/kanban', async (req, res) => {
     });
 
     // Separa os tickets nas colunas correspondentes com base no status do fluxo
+const inicioDoDia = new Date();
+    inicioDoDia.setHours(0, 0, 0, 0);
+
+    // Separa os tickets nas colunas correspondentes com base no status do fluxo
     const kanbanData = {
       aFazer: ticketsComTempoAtualizado.filter(t => t.status === 'A_FAZER'),
       atendendo: ticketsComTempoAtualizado.filter(t => t.status === 'ATENDENDO'),
       pausados: ticketsComTempoAtualizado.filter(t => t.status === 'PAUSADOS'),
-      concluidosDoDia: ticketsComTempoAtualizado.filter(t => t.status === 'CONCLUIDO'),
+      // ⚡ CORRIGIDO: Agora filtra apenas os concluídos cujo carimbo 'finalizadoEm' seja de hoje em diante
+      concluidosDoDia: ticketsComTempoAtualizado.filter(t => 
+        t.status === 'CONCLUIDO' && t.finalizadoEm && new Date(t.finalizadoEm) >= inicioDoDia
+      ),
     };
 
     res.json(kanbanData);
@@ -114,8 +121,8 @@ router.get('/tickets/kanban', async (req, res) => {
  */
 router.post('/tickets', async (req, res) => {
   try {
-    const { assunto, descricao, empresaId, dispositivoId, categoriaId } = req.body;
-
+    const { assunto, descricao, empresaId, dispositivoId, categoriaId, solicitante } = req.body;
+    
     // 🔒 TRAVA DE SEGURANÇA: Exige obrigatoriamente assunto, empresaId e categoriaId
     if (!assunto || !empresaId || !categoriaId) {
       return res.status(400).json({ erro: "Os campos assunto, empresaId e categoriaId são obrigatórios." });
@@ -133,6 +140,7 @@ router.post('/tickets', async (req, res) => {
         empresaId,
         dispositivoId: dispositivoId || null,
         categoriaId, // ⚡ Salvando a relação obrigatória da categoria
+        solicitante: solicitante || "Não informado"
       },
       include: {
         empresa: true,
@@ -248,6 +256,32 @@ router.patch('/tickets/:id/status', async (req, res) => {
   } catch (error) {
     console.error("Erro ao atualizar status, tempo e apontamento do ticket:", error);
     res.status(500).json({ erro: "Erro interno ao processar a transição com histórico." });
+  }
+});
+/**
+ * 7. ROTA DE ATUALIZAÇÃO DOS DADOS DO TICKET (Edição Avançada no Modal)
+ */
+router.put('/tickets/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { assunto, descricao, categoriaId, dispositivoId, solicitante } = req.body;
+
+    const ticketAtualizado = await prisma.ticket.update({
+      where: { id },
+      data: {
+        assunto,
+        descricao,
+        categoriaId,
+        dispositivoId: dispositivoId || null,
+        solicitante
+      },
+      include: { empresa: true, dispositivo: true, categoria: true, apontamentos: true }
+    });
+
+    res.json(ticketAtualizado);
+  } catch (error) {
+    console.error("Erro ao atualizar dados do ticket:", error);
+    res.status(500).json({ erro: "Erro ao atualizar dados do chamado." });
   }
 });
 
