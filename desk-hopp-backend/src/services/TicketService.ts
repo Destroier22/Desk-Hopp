@@ -8,6 +8,8 @@ interface CriarTicketDTO {
   descricao?: string;
   empresaId: string;
   dispositivoId?: string;
+  solicitante?: string;
+  operador?: string;
   categoriaId: string; // ⚡ Adicionado de acordo com o novo schema
 }
 
@@ -18,8 +20,11 @@ export class TicketService {
    */
   async criarTicket(dados: CriarTicketDTO) {
     // Gera o número sequencial simples para o chamado
-    const totalTickets = await prisma.ticket.count();
-    const proximoNumero = 11241 + totalTickets;
+    const ultimoTicket = await prisma.ticket.findFirst({
+      orderBy: { numero: 'desc' },
+      select: { numero: true }
+    });
+    const proximoNumero = (ultimoTicket?.numero || 0) + 1;
 
     return await prisma.ticket.create({
       data: {
@@ -29,6 +34,8 @@ export class TicketService {
         status: "A_FAZER",
         empresaId: dados.empresaId,
         dispositivoId: dados.dispositivoId || null,
+        solicitante: dados.solicitante || "Nao informado",
+        operador: dados.operador || null,
         categoriaId: dados.categoriaId // ⚡ Gravando a categoria obrigatória
       },
       // Retorna os dados agregados para o solicitante

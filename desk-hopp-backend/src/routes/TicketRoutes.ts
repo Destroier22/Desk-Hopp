@@ -82,7 +82,7 @@ router.get('/tickets/kanban', async (req, res) => {
       if (ticket.status === 'ATENDENDO' && ticket.tempoIniciadoEm) {
         const diferencaMilissegundos = agora.getTime() - new Date(ticket.tempoIniciadoEm).getTime();
         const segundosRolaram = Math.floor(diferencaMilissegundos / 1000);
-        
+
         // Acumula temporariamente para exibição na tela sem alterar o valor rígido do banco
         totalSegundosAtualizado += segundosRolaram;
       }
@@ -103,7 +103,7 @@ const inicioDoDia = new Date();
       atendendo: ticketsComTempoAtualizado.filter(t => t.status === 'ATENDENDO'),
       pausados: ticketsComTempoAtualizado.filter(t => t.status === 'PAUSADOS'),
       // ⚡ CORRIGIDO: Agora filtra apenas os concluídos cujo carimbo 'finalizadoEm' seja de hoje em diante
-      concluidosDoDia: ticketsComTempoAtualizado.filter(t => 
+      concluidosDoDia: ticketsComTempoAtualizado.filter(t =>
         t.status === 'CONCLUIDO' && t.finalizadoEm && new Date(t.finalizadoEm) >= inicioDoDia
       ),
     };
@@ -121,15 +121,19 @@ const inicioDoDia = new Date();
  */
 router.post('/tickets', async (req, res) => {
   try {
-    const { assunto, descricao, empresaId, dispositivoId, categoriaId, solicitante } = req.body;
-    
+    const { assunto, descricao, empresaId, dispositivoId, categoriaId, solicitante, operador } = req.body;
+
     // 🔒 TRAVA DE SEGURANÇA: Exige obrigatoriamente assunto, empresaId e categoriaId
     if (!assunto || !empresaId || !categoriaId) {
       return res.status(400).json({ erro: "Os campos assunto, empresaId e categoriaId são obrigatórios." });
     }
 
     // Geração automática do número do ticket com 5 dígitos (Padrão Milvus)
-    const numeroTicket = Math.floor(10000 + Math.random() * 90000);
+    const ultimoTicket = await prisma.ticket.findFirst({
+      orderBy: { numero: 'desc' },
+      select: { numero: true }
+    });
+    const numeroTicket = (ultimoTicket?.numero || 0) + 1;
 
     const novoTicket = await prisma.ticket.create({
       data: {
@@ -139,6 +143,7 @@ router.post('/tickets', async (req, res) => {
         status: 'A_FAZER', // Todo chamado entra na triagem inicial
         empresaId,
         dispositivoId: dispositivoId || null,
+        operador: operador || null,
         categoriaId, // ⚡ Salvando a relação obrigatória da categoria
         solicitante: solicitante || "Não informado"
       },
@@ -165,7 +170,8 @@ router.post('/tickets', async (req, res) => {
 router.patch('/tickets/:id/status', async (req, res) => {
   try {
     const { id } = req.params;
-    const { novoStatus, texto } = req.body; // 'texto' é a justificativa ou ação do técnico
+    const { operador } = req.body;
+    const { novoStatus, texto, imagemBase64, imagemNome, imagemTipo } = req.body; // 'texto' é a justificativa ou ação do técnico
 
     // 1. Valida se o status pertence ao fluxo permitido
     const statusValidos = ['A_FAZER', 'ATENDENDO', 'PAUSADOS', 'CONCLUIDO'];
@@ -191,21 +197,34 @@ router.patch('/tickets/:id/status', async (req, res) => {
     let tempoIniciadoEm = ticketAtual.tempoIniciadoEm;
     let totalSegundos = ticketAtual.totalSegundos;
     let segundosDestaSessao = 0;
-    let finalizadoEm = ticketAtual.finalizadoEm; 
+    let finalizadoEm = ticketAtual.finalizadoEm;
+    let operadorAtualizado = ticketAtual.operador;
+    const novoOperador = operador ? String(operador).trim() : '';
+    const apontamentosExtras: { texto: string; segundosSessao: number; ticketId: string }[] = [];
 
     // 3. ENGENHARIA DO CRONÔMETRO E MARCAÇÃO DE DATAS
-    
+
     // Cenário A: Técnico deu "Play" ou retomou o chamado -> Dá o Play
     if (novoStatus === 'ATENDENDO') {
       tempoIniciadoEm = agora;
       finalizadoEm = null; // Se reabriu ou retomou, limpa a data de fechamento antiga
-    } 
+      if (novoOperador && novoOperador !== ticketAtual.operador) {
+        apontamentosExtras.push({
+          texto: ticketAtual.operador
+            ? `Operador alterado de ${ticketAtual.operador} para ${novoOperador}.`
+            : `Operador atribuido a ${novoOperador}.`,
+          segundosSessao: 0,
+          ticketId: id
+        });
+        operadorAtualizado = novoOperador;
+      }
+    }
     // Cenário B: Estava trabalhando ("ATENDENDO") e clicou em Pausar ou Concluir -> Dá o Pause/Stop
     else if (ticketAtual.status === 'ATENDENDO' && (novoStatus === 'PAUSADOS' || novoStatus === 'CONCLUIDO')) {
       if (ticketAtual.tempoIniciadoEm) {
         const diferencaMilissegundos = agora.getTime() - new Date(ticketAtual.tempoIniciadoEm).getTime();
         segundosDestaSessao = Math.floor(diferencaMilissegundos / 1000);
-        
+
         // Acumula os segundos trabalhados nesta rodada ao histórico total do ticket
         totalSegundos += segundosDestaSessao;
       }
@@ -230,6 +249,7 @@ router.patch('/tickets/:id/status', async (req, res) => {
           status: novoStatus,
           tempoIniciadoEm,
           totalSegundos,
+          operador: operadorAtualizado,
           finalizadoEm // ⚡ Salvando no campo correto alinhado ao Schema
         },
         include: {
@@ -239,17 +259,21 @@ router.patch('/tickets/:id/status', async (req, res) => {
           apontamentos: true
         }
       }),
-      
+
       // Se gerou tempo ou se tem texto de pausa/conclusão, cria o registro na Timeline
       ...(segundosDestaSessao > 0 || (texto && (novoStatus === 'PAUSADOS' || novoStatus === 'CONCLUIDO')) ? [
         prisma.apontamento.create({
           data: {
             texto: texto || "Pausa/Conclusão efetuada.",
             segundosSessao: segundosDestaSessao,
+            imagemBase64: imagemBase64 || null,
+            imagemNome: imagemNome || null,
+            imagemTipo: imagemTipo || null,
             ticketId: id
           }
         })
-      ] : [])
+      ] : []),
+      ...apontamentosExtras.map((apontamento) => prisma.apontamento.create({ data: apontamento }))
     ]);
 
     res.json(ticketAtualizado);
@@ -264,7 +288,7 @@ router.patch('/tickets/:id/status', async (req, res) => {
 router.put('/tickets/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { assunto, descricao, categoriaId, dispositivoId, solicitante } = req.body;
+    const { assunto, descricao, categoriaId, dispositivoId, solicitante, valorCobrancaAvulsa } = req.body;
 
     const ticketAtualizado = await prisma.ticket.update({
       where: { id },
@@ -273,7 +297,10 @@ router.put('/tickets/:id', async (req, res) => {
         descricao,
         categoriaId,
         dispositivoId: dispositivoId || null,
-        solicitante
+        solicitante,
+        valorCobrancaAvulsa: valorCobrancaAvulsa === null || valorCobrancaAvulsa === undefined || valorCobrancaAvulsa === ''
+          ? null
+          : Number(valorCobrancaAvulsa)
       },
       include: { empresa: true, dispositivo: true, categoria: true, apontamentos: true }
     });

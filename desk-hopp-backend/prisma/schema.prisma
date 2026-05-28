@@ -16,10 +16,10 @@ generator client {
 // -----------------------------------------------------------------------------
 
 model Empresa {
-  id           String        @id @default(uuid())
-  nome         String        @unique
-  criadoEm     DateTime      @default(now())
-  
+  id       String   @id @default(uuid())
+  nome     String   @unique
+  criadoEm DateTime @default(now())
+
   // Relações reversas (Não geram colunas físicas no banco de dados)
   dispositivos Dispositivo[]
   tickets      Ticket[]
@@ -30,17 +30,17 @@ model Empresa {
 // -----------------------------------------------------------------------------
 
 model Dispositivo {
-  id        String   @id @default(uuid())
-  nome      String   // Ex: "NOTEBOOK-FINANCEIRO", "SERVIDOR-PROD"
-  tipo      String   // Ex: "Notebook", "Servidor", "Impressora"
-  criadoEm  DateTime @default(now())
+  id       String   @id @default(uuid())
+  nome     String // Ex: "NOTEBOOK-FINANCEIRO", "SERVIDOR-PROD"
+  tipo     String // Ex: "Notebook", "Servidor", "Impressora"
+  criadoEm DateTime @default(now())
 
   // Chave estrangeira ligando o ativo rigidamente à sua respectiva empresa
   empresaId String
-  empresa   Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
-  
+  empresa   Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
   // Relação reversa indicando os chamados abertos para este dispositivo
-  tickets   Ticket[]
+  tickets Ticket[]
 }
 
 // -----------------------------------------------------------------------------
@@ -53,7 +53,7 @@ model Categoria {
   criadoEm DateTime @default(now())
 
   // Relação reversa vinculando os tickets que pertencem a esta categoria
-  tickets  Ticket[]
+  tickets Ticket[]
 }
 
 // -----------------------------------------------------------------------------
@@ -61,35 +61,37 @@ model Categoria {
 // -----------------------------------------------------------------------------
 
 model Ticket {
-  id              String        @id @default(uuid())
-  numero          Int           @unique // Protocolo gerado automaticamente (Ex: 5 dígitos)
-  assunto         String
-  descricao       String?       // Detalhes iniciais informados na abertura
-  solicitante     String
-  status          String        @default("A_FAZER") // Fluxo: A_FAZER, ATENDENDO, PAUSADOS, CONCLUIDO
-  criadoEm        DateTime      @default(now())
+  id                  String   @id @default(uuid())
+  numero              Int      @unique // Protocolo gerado automaticamente (Ex: 5 dígitos)
+  assunto             String
+  descricao           String? // Detalhes iniciais informados na abertura
+  solicitante         String
+  operador            String?
+  status              String   @default("A_FAZER") // Fluxo: A_FAZER, ATENDENDO, PAUSADOS, CONCLUIDO
+  criadoEm            DateTime @default(now())
+  valorCobrancaAvulsa Float?
 
   // Vínculo obrigatório com a Empresa do Solicitante
-  empresaId       String
-  empresa         Empresa       @relation(fields: [empresaId], references: [id])
+  empresaId String
+  empresa   Empresa @relation(fields: [empresaId], references: [id])
 
   // Vínculo opcional com o Dispositivo/Ativo afetado
-  dispositivoId   String?
-  dispositivo     Dispositivo?  @relation(fields: [dispositivoId], references: [id])
-  
+  dispositivoId String?
+  dispositivo   Dispositivo? @relation(fields: [dispositivoId], references: [id])
+
   // Vínculo obrigatório com a Categoria de atendimento
-  categoriaId     String
-  categoria       Categoria     @relation(fields: [categoriaId], references: [id])
-  
+  categoriaId String
+  categoria   Categoria @relation(fields: [categoriaId], references: [id])
+
   //  ENGENHARIA DE SLA E CRONÔMETRO
-  tempoIniciadoEm DateTime?     // Guarda o exato momento do "Play" para cálculo ao vivo
-  totalSegundos   Int           @default(0) // Acumulado rígido de todas as sessões trabalhadas
+  tempoIniciadoEm DateTime? // Guarda o exato momento do "Play" para cálculo ao vivo
+  totalSegundos   Int       @default(0) // Acumulado rígido de todas as sessões trabalhadas
 
   //  MARCAÇÃO DE ENCERRAMENTO (Adicionado e Corrigido no local correto)
-  finalizadoEm    DateTime?     // Armazena a data/hora exata em que o ticket mudou para 'CONCLUIDO'
+  finalizadoEm DateTime? // Armazena a data/hora exata em que o ticket mudou para 'CONCLUIDO'
 
   // Linha do tempo contendo o histórico de interações (Apontamentos)
-  apontamentos    Apontamento[]
+  apontamentos Apontamento[]
 }
 
 // -----------------------------------------------------------------------------
@@ -98,11 +100,28 @@ model Ticket {
 
 model Apontamento {
   id             String   @id @default(uuid())
-  texto          String   // Descrição técnica do que o analista executou nesta sessão
-  segundosSessao Int      // Quantidade de segundos capturada pelo cronômetro nesta sessão específica
+  texto          String // Descrição técnica do que o analista executou nesta sessão
+  segundosSessao Int // Quantidade de segundos capturada pelo cronômetro nesta sessão específica
   criadoEm       DateTime @default(now()) // Data e hora do registro
+  imagemBase64   String?
+  imagemNome     String?
+  imagemTipo     String?
 
   // Conexão com o ticket pai. Se o ticket for deletado, limpa o histórico em cascata.
-  ticketId       String
-  ticket         Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  ticketId String
+  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+}
+
+// -----------------------------------------------------------------------------
+// MODELO 6: USUARIOS DO SISTEMA
+// -----------------------------------------------------------------------------
+
+model Usuario {
+  id           String   @id @default(uuid())
+  nomeUsuario  String
+  email        String   @unique
+  senhaHash    String
+  tipoUsuario  String
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
 }

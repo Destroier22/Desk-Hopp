@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { 
-  LayoutDashboard, Ticket, MessageSquare, ClipboardList, 
-  FolderKanban, Box, BarChart3, Wallet, BookOpen, 
-  UserPlus, Settings, ShieldCheck, Download, ChevronRight, ChevronLeft 
+import {
+  LayoutDashboard, Ticket, MessageSquare, ClipboardList,
+  FolderKanban, Box, BarChart3, Wallet, BookOpen,
+  UserPlus, Settings, ShieldCheck, Download
 } from 'lucide-react';
 
 export function Sidebar() {
@@ -26,7 +26,9 @@ export function Sidebar() {
   ];
 
   return (
-    <div 
+    <div
+      onMouseEnter={() => setExpandido(true)}
+      onMouseLeave={() => setExpandido(false)}
       className={`h-screen bg-[#1e1e24] border-r border-gray-800 text-gray-400 flex flex-col justify-between p-2 relative transition-all duration-300 select-none ${
         expandido ? 'w-64' : 'w-16'
       }`}
@@ -53,8 +55,8 @@ export function Sidebar() {
               <div
                 key={index}
                 className={`flex items-center gap-4 px-3 py-2.5 rounded-md cursor-pointer transition-colors ${
-                  item.ativo 
-                    ? 'bg-blue-600 text-white font-medium' 
+                  item.ativo
+                    ? 'bg-blue-600 text-white font-medium'
                     : 'hover:bg-gray-800 hover:text-gray-200'
                 }`}
                 title={!expandido ? item.texto : ''}
@@ -70,14 +72,6 @@ export function Sidebar() {
           })}
         </nav>
       </div>
-
-      {/* Botão Flutuante para Expandir / Recolher */}
-      <button
-        onClick={() => setExpandido(!expandido)}
-        className="absolute -right-3 top-6 w-6 h-6 bg-blue-600 hover:bg-blue-500 rounded-full flex items-center justify-center text-white border border-gray-900 shadow-md transition-transform"
-      >
-        {expandido ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
-      </button>
     </div>
   );
 }
