@@ -59,6 +59,27 @@ router.post('/login', async (req, res) => {
   }
 });
 
+router.get('/usuarios', async (_req, res) => {
+  try {
+    const usuarios = await prisma.usuario.findMany({
+      select: {
+        id: true,
+        nomeUsuario: true,
+        email: true,
+        tipoUsuario: true,
+      },
+      orderBy: {
+        nomeUsuario: 'asc',
+      },
+    });
+
+    res.json(usuarios);
+  } catch (error) {
+    console.error('Erro ao listar usuarios:', error);
+    res.status(500).json({ erro: 'Erro ao listar usuarios.' });
+  }
+});
+
 router.post('/usuarios', async (req, res) => {
   try {
     const { nomeUsuario, email, senha, tipoUsuario } = req.body;

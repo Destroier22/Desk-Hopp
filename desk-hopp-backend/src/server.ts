@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import ticketRoutes from '../src/routes/TicketRoutes';
 import authRoutes from '../src/routes/AuthRoutes';
+import whatsAppRoutes from '../src/routes/WhatsAppRoutes';
 
 const app = express();
 const PORT = 3000;
@@ -15,6 +16,7 @@ app.use(express.json({ limit: '10mb' }));
 // 3. Injeta as rotas de gerenciamento de Tickets e Inventário dentro da API
 app.use(authRoutes);
 app.use(ticketRoutes);
+app.use(whatsAppRoutes);
 
 // Rota inicial apenas para teste rápido no navegador
 app.get('/', (req, res) => {
