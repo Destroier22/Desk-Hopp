@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { whatsAppBridgeService } from '../services/WhatsAppBridgeService';
 
 const router = Router();
 
@@ -73,6 +74,39 @@ router.post('/whatsapp/enviar', async (req, res) => {
   } catch (error) {
     console.error('Erro na integracao WhatsApp:', error);
     return res.status(500).json({ erro: 'Erro interno na integracao WhatsApp.' });
+  }
+});
+
+router.post('/whatsapp-bridge/iniciar', async (_req, res) => {
+  const status = await whatsAppBridgeService.iniciar();
+  res.json(status);
+});
+
+router.get('/whatsapp-bridge/status', (_req, res) => {
+  res.json(whatsAppBridgeService.getStatus());
+});
+
+router.get('/whatsapp-bridge/qr', (_req, res) => {
+  res.json(whatsAppBridgeService.getQr());
+});
+
+router.post('/whatsapp-bridge/enviar', async (req, res) => {
+  try {
+    const { para, mensagem } = req.body;
+
+    if (!para || !mensagem) {
+      return res.status(400).json({ erro: 'Informe telefone e mensagem.' });
+    }
+
+    const resposta = await whatsAppBridgeService.enviarMensagem(String(para), String(mensagem));
+    return res.json({
+      id: resposta.id?._serialized,
+      timestamp: resposta.timestamp,
+    });
+  } catch (error) {
+    return res.status(400).json({
+      erro: error instanceof Error ? error.message : 'Erro ao enviar mensagem pelo bridge.',
+    });
   }
 });
 

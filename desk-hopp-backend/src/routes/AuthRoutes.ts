@@ -5,14 +5,6 @@ import { randomBytes, scryptSync, timingSafeEqual } from 'crypto';
 const router = Router();
 const prisma = new PrismaClient();
 
-const tiposUsuarioValidos = [
-  'Financeiro',
-  'Administrador',
-  'Suporte',
-  'Gestor Financeiro',
-  'Gestor Suporte',
-];
-
 export function gerarSenhaHash(senha: string) {
   const salt = randomBytes(16).toString('hex');
   const hash = scryptSync(senha, salt, 64).toString('hex');
@@ -88,16 +80,12 @@ router.post('/usuarios', async (req, res) => {
       return res.status(400).json({ erro: 'Nome de usuario, e-mail, senha e tipo de usuario sao obrigatorios.' });
     }
 
-    if (!tiposUsuarioValidos.includes(tipoUsuario)) {
-      return res.status(400).json({ erro: 'Tipo de usuario invalido.' });
-    }
-
     const usuario = await prisma.usuario.create({
       data: {
-        nomeUsuario,
+        nomeUsuario: String(nomeUsuario).trim(),
         email: String(email).trim().toLowerCase(),
         senhaHash: gerarSenhaHash(String(senha)),
-        tipoUsuario,
+        tipoUsuario: String(tipoUsuario).trim(),
       },
     });
 
@@ -110,6 +98,48 @@ router.post('/usuarios', async (req, res) => {
   } catch (error) {
     console.error('Erro ao criar usuario:', error);
     res.status(500).json({ erro: 'Erro ao criar usuario.' });
+  }
+});
+
+router.put('/usuarios/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nomeUsuario, email, senha, tipoUsuario } = req.body;
+
+    if (!nomeUsuario || !email || !tipoUsuario) {
+      return res.status(400).json({ erro: 'Nome de usuario, e-mail e tipo de usuario sao obrigatorios.' });
+    }
+
+    const usuario = await prisma.usuario.update({
+      where: { id },
+      data: {
+        nomeUsuario: String(nomeUsuario).trim(),
+        email: String(email).trim().toLowerCase(),
+        tipoUsuario: String(tipoUsuario).trim(),
+        ...(senha ? { senhaHash: gerarSenhaHash(String(senha)) } : {}),
+      },
+    });
+
+    res.json({
+      id: usuario.id,
+      nomeUsuario: usuario.nomeUsuario,
+      email: usuario.email,
+      tipoUsuario: usuario.tipoUsuario,
+    });
+  } catch (error) {
+    console.error('Erro ao editar usuario:', error);
+    res.status(500).json({ erro: 'Erro ao editar usuario.' });
+  }
+});
+
+router.delete('/usuarios/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.usuario.delete({ where: { id } });
+    res.status(204).send();
+  } catch (error) {
+    console.error('Erro ao excluir usuario:', error);
+    res.status(500).json({ erro: 'Erro ao excluir usuario.' });
   }
 });
 

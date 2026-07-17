@@ -36,6 +36,31 @@ export interface KanbanData {
   concluidosDoDia: Ticket[];
 }
 
+export type TarefaStatus = 'A_FAZER' | 'ATENDENDO' | 'PAUSADO' | 'CONCLUIDO';
+
+export interface TarefaKanban {
+  id: string;
+  codigo: string;
+  titulo: string;
+  descricao: string;
+  responsavelId: string;
+  responsavelNome: string;
+  solicitante: string;
+  prioridade: 'Baixa' | 'Media' | 'Alta' | 'Critica';
+  categoria: string;
+  projeto: string;
+  prazo: string;
+  estimativaHoras: string;
+  etiquetas: string[];
+  checklist: string[];
+  observadores: string;
+  linkReferencia: string;
+  recorrencia: string;
+  lembrete: string;
+  status: TarefaStatus;
+  criadoEm: string;
+}
+
 export interface Empresa {
   id: string;
   nome: string;
@@ -64,4 +89,54 @@ export interface ImagemApontamento {
   tipo: string;
 }
 
-export type AppView = 'fluxo-atendimento' | 'relatorios' | 'mesas-trabalho' | 'chat-interno' | 'chat-externo';
+export interface ChatExternoContato {
+  id: string;
+  nome: string;
+  telefone: string;
+  empresa: string;
+  ultimaInteracao: string;
+}
+
+export interface FilaAtendimento {
+  id: string;
+  nome: string;
+  descricao: string;
+  usuariosIds: string[];
+}
+
+export interface FiltroAtendimento {
+  id: string;
+  respostaCliente: string;
+  mensagemAutomatica: string;
+  filaId: string;
+  ativo: boolean;
+}
+
+export interface CategoriaUsuario {
+  id: string;
+  nome: string;
+  permissoes: string[];
+}
+
+export interface BaseConhecimentoItem {
+  id: string;
+  tipo: 'pasta' | 'arquivo';
+  nome: string;
+  parentId: string | null;
+  conteudo?: string;
+  criadoEm: string;
+  atualizadoEm: string;
+}
+
+export type AppView =
+  | 'fluxo-atendimento'
+  | 'relatorios'
+  | 'mesas-trabalho'
+  | 'base-conhecimento'
+  | 'chat-interno'
+  | 'chat-externo'
+  | 'chat-externo-filas'
+  | 'chat-externo-filtros'
+  | 'telefone'
+  | 'config-cadastros'
+  | 'config-chat-externo-conectar-numero';

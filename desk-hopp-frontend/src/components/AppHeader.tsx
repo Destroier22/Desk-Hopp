@@ -9,6 +9,7 @@ interface AppHeaderProps {
   usuarioLogado: UsuarioLogado;
   onToggleAutoRefresh: () => void;
   onNovoTicket: () => void;
+  onNovaTarefa: () => void;
   onCarregarTickets: () => void;
   onToggleNotificacoes: () => void;
   onSair: () => void;
@@ -22,6 +23,7 @@ export function AppHeader({
   usuarioLogado,
   onToggleAutoRefresh,
   onNovoTicket,
+  onNovaTarefa,
   onCarregarTickets,
   onToggleNotificacoes,
   onSair,
@@ -36,6 +38,9 @@ export function AppHeader({
         </button>
         <button onClick={onNovoTicket} className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-3 py-2 rounded flex items-center gap-1.5 shadow cursor-pointer">
           <PlusCircle size={15} /><span>Novo Ticket</span>
+        </button>
+        <button onClick={onNovaTarefa} className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs px-3 py-2 rounded flex items-center gap-1.5 shadow cursor-pointer">
+          <PlusCircle size={15} /><span>Nova Tarefa</span>
         </button>
         <button onClick={onCarregarTickets} disabled={carregando} className="bg-[#202024] border border-gray-700 text-gray-300 p-2 rounded hover:bg-gray-700 cursor-pointer">
           <RotateCw size={15} className={carregando ? 'animate-spin text-blue-400' : ''} />

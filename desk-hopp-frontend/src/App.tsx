@@ -4,20 +4,31 @@ import { AppHeader } from './components/AppHeader';
 import { KanbanBoard } from './components/KanbanBoard';
 import { LoginScreen } from './components/LoginScreen';
 import { Sidebar } from './components/Sidebar';
+import { BaseConhecimento } from './components/base/BaseConhecimento';
 import { ChatExternoWhatsApp } from './components/chat/ChatExternoWhatsApp';
 import { ChatInterno } from './components/chat/ChatInterno';
+import { ConectarNumeroWhatsApp } from './components/chat/ConectarNumeroWhatsApp';
+import { FilasAtendimentoConfig } from './components/chat/FilasAtendimentoConfig';
+import { FiltrosAtendimentoConfig } from './components/chat/FiltrosAtendimentoConfig';
+import { CadastrosConfig } from './components/configuracoes/CadastrosConfig';
 import { MesasTrabalhoDashboard } from './components/dashboards/MesasTrabalhoDashboard';
 import { RelatoriosDashboard } from './components/dashboards/RelatoriosDashboard';
 import { ApontamentoModal } from './components/modals/ApontamentoModal';
 import { CobrancaModal } from './components/modals/CobrancaModal';
+import { NovaTarefaModal, type NovaTarefaForm } from './components/modals/NovaTarefaModal';
 import { NovoTicketModal } from './components/modals/NovoTicketModal';
 import { TicketDetailsModal } from './components/modals/TicketDetailsModal';
 import type {
   Categoria,
+  CategoriaUsuario,
+  ChatExternoContato,
   Dispositivo,
   Empresa,
+  FilaAtendimento,
+  FiltroAtendimento,
   ImagemApontamento,
   KanbanData,
+  TarefaKanban,
   Ticket,
   UsuarioLogado,
   AppView,
@@ -31,6 +42,7 @@ export default function App() {
 
   const [carregando, setCarregando] = useState(false);
   const [modalAberto, setModalAberto] = useState(false);
+  const [modalTarefaAberto, setModalTarefaAberto] = useState(false);
   const [notificacoesAtivas, setNotificacoesAtivas] = useState<boolean>(() => {
     const salvo = localStorage.getItem('deskhopp:notificacoes');
     return salvo ? JSON.parse(salvo) : true;
@@ -70,6 +82,88 @@ export default function App() {
   const [loginErro, setLoginErro] = useState('');
   const [activeView, setActiveView] = useState<AppView>('fluxo-atendimento');
   const [usuarios, setUsuarios] = useState<UsuarioLogado[]>([]);
+  const [tarefasKanban, setTarefasKanban] = useState<TarefaKanban[]>(() => {
+    const salvo = localStorage.getItem('deskhopp:tarefas-kanban');
+    return salvo ? JSON.parse(salvo) : [];
+  });
+  const criarFormTarefaInicial = (responsavelId = '', solicitanteNome = ''): NovaTarefaForm => ({
+    titulo: '',
+    descricao: '',
+    responsavelId,
+    solicitante: solicitanteNome,
+    prioridade: 'Media',
+    categoria: 'Operacional',
+    projeto: '',
+    prazo: '',
+    estimativaHoras: '',
+    etiquetasTexto: '',
+    checklistTexto: '',
+    observadores: '',
+    linkReferencia: '',
+    recorrencia: 'Nao recorrente',
+    lembrete: '',
+  });
+  const [novaTarefa, setNovaTarefa] = useState<NovaTarefaForm>(() => criarFormTarefaInicial());
+  const [categoriasUsuario, setCategoriasUsuario] = useState<CategoriaUsuario[]>([
+    {
+      id: 'administrador',
+      nome: 'Administrador',
+      permissoes: [
+        'Visualizar dashboards',
+        'Gerenciar tickets',
+        'Atender chat interno',
+        'Atender chat externo',
+        'Configurar chat externo',
+        'Gerenciar usuarios',
+        'Gerenciar financeiro',
+        'Acessar relatorios',
+        'Administrar Base de conhecimento',
+      ],
+    },
+    {
+      id: 'gestor',
+      nome: 'Gestor',
+      permissoes: ['Visualizar dashboards', 'Gerenciar tickets', 'Configurar chat externo', 'Acessar relatorios'],
+    },
+    {
+      id: 'suporte',
+      nome: 'Suporte',
+      permissoes: ['Visualizar dashboards', 'Gerenciar tickets', 'Atender chat interno', 'Atender chat externo'],
+    },
+    {
+      id: 'financeiro',
+      nome: 'Financeiro',
+      permissoes: ['Visualizar dashboards', 'Atender chat externo', 'Gerenciar financeiro', 'Acessar relatorios'],
+    },
+  ]);
+  const [contatosExternos, setContatosExternos] = useState<ChatExternoContato[]>([
+    { id: 'c1', nome: 'Mariana Costa', telefone: '+55 11 98444-1020', empresa: 'Costa & Lima', ultimaInteracao: 'Hoje' },
+    { id: 'c2', nome: 'Financeiro Alfa', telefone: '+55 21 97777-3311', empresa: 'Alfa Servicos', ultimaInteracao: 'Hoje' },
+    { id: 'c3', nome: 'Unidade Centro', telefone: '+55 31 96666-0188', empresa: 'Grupo Centro', ultimaInteracao: 'Ontem' },
+    { id: 'c4', nome: 'Ricardo Martins', telefone: '+55 11 91234-5544', empresa: 'Martins Contabilidade', ultimaInteracao: '12/07' },
+    { id: 'c5', nome: 'Operacao Delta', telefone: '+55 41 98888-4400', empresa: 'Delta Transportes', ultimaInteracao: '08/07' },
+  ]);
+  const [filasAtendimento, setFilasAtendimento] = useState<FilaAtendimento[]>([
+    { id: 'suporte', nome: 'Suporte', descricao: 'Chamados tecnicos e suporte ao usuario', usuariosIds: [] },
+    { id: 'financeiro', nome: 'Financeiro', descricao: 'Cobrancas, notas fiscais e faturamento', usuariosIds: [] },
+    { id: 'administrativo', nome: 'Administrativo', descricao: 'Solicitacoes administrativas gerais', usuariosIds: [] },
+  ]);
+  const [filtrosAtendimento, setFiltrosAtendimento] = useState<FiltroAtendimento[]>([
+    {
+      id: 'filtro-financeiro',
+      respostaCliente: 'financeiro',
+      mensagemAutomatica: 'Entendi. Vou direcionar seu atendimento para a fila Financeiro.',
+      filaId: 'financeiro',
+      ativo: true,
+    },
+    {
+      id: 'filtro-suporte',
+      respostaCliente: 'erro, acesso, sistema',
+      mensagemAutomatica: 'Certo, vou encaminhar para a fila de Suporte.',
+      filaId: 'suporte',
+      ativo: true,
+    },
+  ]);
 
   const carregarTickets = useCallback(async () => {
     try {
@@ -147,6 +241,53 @@ export default function App() {
     } catch (error) {
       console.error(error);
     }
+  };
+
+  const abrirModalNovaTarefa = () => {
+    setNovaTarefa(criarFormTarefaInicial(usuarioLogado?.id || '', usuarioLogado?.nomeUsuario || ''));
+    setModalTarefaAberto(true);
+  };
+
+  const atualizarNovaTarefa = (campo: keyof NovaTarefaForm, valor: string) => {
+    setNovaTarefa(prev => ({ ...prev, [campo]: valor }));
+  };
+
+  const salvarNovaTarefa = (e: FormEvent) => {
+    e.preventDefault();
+    const responsavel = usuarios.find(usuario => usuario.id === novaTarefa.responsavelId) || usuarioLogado;
+
+    if (!novaTarefa.titulo.trim() || !responsavel) {
+      alert('Informe o titulo e o responsavel da tarefa.');
+      return;
+    }
+
+    const tarefa: TarefaKanban = {
+      id: `tarefa-${Date.now()}`,
+      codigo: `TAR-${String(tarefasKanban.length + 1).padStart(4, '0')}`,
+      titulo: novaTarefa.titulo.trim(),
+      descricao: novaTarefa.descricao.trim(),
+      responsavelId: responsavel.id,
+      responsavelNome: responsavel.nomeUsuario,
+      solicitante: novaTarefa.solicitante.trim() || usuarioLogado?.nomeUsuario || 'Interno',
+      prioridade: novaTarefa.prioridade,
+      categoria: novaTarefa.categoria,
+      projeto: novaTarefa.projeto.trim(),
+      prazo: novaTarefa.prazo,
+      estimativaHoras: novaTarefa.estimativaHoras,
+      etiquetas: novaTarefa.etiquetasTexto.split(',').map(etiqueta => etiqueta.trim()).filter(Boolean),
+      checklist: novaTarefa.checklistTexto.split('\n').map(item => item.trim()).filter(Boolean),
+      observadores: novaTarefa.observadores.trim(),
+      linkReferencia: novaTarefa.linkReferencia.trim(),
+      recorrencia: novaTarefa.recorrencia,
+      lembrete: novaTarefa.lembrete,
+      status: 'A_FAZER',
+      criadoEm: new Date().toISOString(),
+    };
+
+    setTarefasKanban(prev => [tarefa, ...prev]);
+    setNovaTarefa(criarFormTarefaInicial(usuarioLogado?.id || '', usuarioLogado?.nomeUsuario || ''));
+    setModalTarefaAberto(false);
+    setActiveView('fluxo-atendimento');
   };
 
   const abrirDetalhesTicket = async (ticket: Ticket) => {
@@ -460,6 +601,28 @@ export default function App() {
     localStorage.setItem('deskhopp:notificacoes', JSON.stringify(notificacoesAtivas));
   }, [notificacoesAtivas]);
 
+  useEffect(() => {
+    localStorage.setItem('deskhopp:tarefas-kanban', JSON.stringify(tarefasKanban));
+  }, [tarefasKanban]);
+
+  useEffect(() => {
+    if (!usuarioLogado || filasAtendimento.some(fila => fila.usuariosIds.length > 0)) return;
+
+    const timer = window.setTimeout(() => {
+      setFilasAtendimento(prev => prev.map((fila) => {
+        const tipo = usuarioLogado.tipoUsuario.toLowerCase();
+        const deveAtribuir =
+          tipo.includes('administrador') ||
+          (tipo.includes('financeiro') && fila.id === 'financeiro') ||
+          (tipo.includes('suporte') && fila.id === 'suporte');
+
+        return deveAtribuir ? { ...fila, usuariosIds: [usuarioLogado.id] } : fila;
+      }));
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [usuarioLogado, filasAtendimento]);
+
   if (!usuarioLogado) {
     return (
       <LoginScreen
@@ -478,13 +641,30 @@ export default function App() {
     'fluxo-atendimento': 'Fluxo de Atendimento',
     relatorios: 'Relatorios',
     'mesas-trabalho': 'Mesas de Trabalho',
+    'base-conhecimento': 'Base de Conhecimento',
     'chat-interno': 'Chat Interno',
     'chat-externo': 'Chat Externo',
+    'chat-externo-filas': 'Fila de Atendimento',
+    'chat-externo-filtros': 'Filtro de Atendimento',
+    telefone: 'Telefone',
+    'config-cadastros': 'Cadastros',
+    'config-chat-externo-conectar-numero': 'Conexao',
   }[activeView];
+  const tipoUsuarioLogado = usuarioLogado.tipoUsuario.toLowerCase();
+  const podeConfigurarChatExterno = tipoUsuarioLogado.includes('administrador') || tipoUsuarioLogado.includes('gestor');
+  const podeConfigurarPlataforma = tipoUsuarioLogado.includes('administrador') || tipoUsuarioLogado.includes('gestor');
+  const categoriaDoUsuarioLogado = categoriasUsuario.find(categoria => categoria.nome.toLowerCase() === tipoUsuarioLogado);
+  const podeAdministrarBaseConhecimento =
+    tipoUsuarioLogado.includes('administrador') ||
+    Boolean(categoriaDoUsuarioLogado?.permissoes.includes('Administrar Base de conhecimento'));
+  const usuariosParaTarefa = [
+    usuarioLogado,
+    ...usuarios.filter(usuario => usuario.id !== usuarioLogado.id),
+  ];
 
   return (
     <div className="flex min-h-screen bg-[#121214] text-white select-none">
-      <Sidebar activeView={activeView} onSelectView={setActiveView} />
+      <Sidebar activeView={activeView} onSelectView={setActiveView} usuarioLogado={usuarioLogado} />
 
       <main className="flex-1 p-6 overflow-y-auto">
         <AppHeader
@@ -498,13 +678,14 @@ export default function App() {
             setModalAberto(true);
             setEmpresaSelecionadaId('');
           }}
+          onNovaTarefa={abrirModalNovaTarefa}
           onCarregarTickets={carregarTickets}
           onToggleNotificacoes={() => setNotificacoesAtivas(!notificacoesAtivas)}
           onSair={sairDoSistema}
         />
 
         {activeView === 'fluxo-atendimento' && (
-          <KanbanBoard kanban={kanban} onAbrirDetalhes={abrirDetalhesTicket} />
+          <KanbanBoard kanban={kanban} tarefas={tarefasKanban} onAbrirDetalhes={abrirDetalhesTicket} />
         )}
         {activeView === 'relatorios' && (
           <RelatoriosDashboard kanban={kanban} />
@@ -512,11 +693,63 @@ export default function App() {
         {activeView === 'mesas-trabalho' && (
           <MesasTrabalhoDashboard kanban={kanban} />
         )}
+        {activeView === 'base-conhecimento' && (
+          <BaseConhecimento podeAdministrar={podeAdministrarBaseConhecimento} />
+        )}
         {activeView === 'chat-interno' && (
           <ChatInterno usuarioLogado={usuarioLogado} usuarios={usuarios} />
         )}
+        {activeView === 'telefone' && (
+          <div className="bg-[#202024] border border-gray-800 rounded-lg p-6">
+            <h1 className="text-xl font-bold text-white">Telefone</h1>
+            <p className="text-sm text-gray-500 mt-2">Modulo visual de VoIP sera construido aqui.</p>
+          </div>
+        )}
         {activeView === 'chat-externo' && (
-          <ChatExternoWhatsApp />
+          <ChatExternoWhatsApp
+            usuarioLogado={usuarioLogado}
+            contatos={contatosExternos}
+            filas={filasAtendimento}
+            onAdicionarContato={(contato) => setContatosExternos(prev => [contato, ...prev])}
+          />
+        )}
+        {activeView === 'chat-externo-filas' && podeConfigurarChatExterno && (
+          <FilasAtendimentoConfig
+            filas={filasAtendimento}
+            usuarios={usuarios}
+            onFilasChange={setFilasAtendimento}
+          />
+        )}
+        {activeView === 'chat-externo-filtros' && podeConfigurarChatExterno && (
+          <FiltrosAtendimentoConfig
+            filas={filasAtendimento}
+            filtros={filtrosAtendimento}
+            onFiltrosChange={setFiltrosAtendimento}
+          />
+        )}
+        {activeView === 'config-chat-externo-conectar-numero' && podeConfigurarChatExterno && (
+          <ConectarNumeroWhatsApp />
+        )}
+        {activeView === 'config-cadastros' && podeConfigurarPlataforma && (
+          <CadastrosConfig
+            usuarioLogado={usuarioLogado}
+            usuarios={usuarios}
+            categoriasUsuario={categoriasUsuario}
+            onUsuariosChange={setUsuarios}
+            onCategoriasUsuarioChange={setCategoriasUsuario}
+          />
+        )}
+        {(activeView === 'chat-externo-filas' || activeView === 'chat-externo-filtros' || activeView === 'config-chat-externo-conectar-numero') && !podeConfigurarChatExterno && (
+          <div className="bg-[#202024] border border-gray-800 rounded-lg p-6">
+            <h1 className="text-lg font-bold text-white">Acesso restrito</h1>
+            <p className="text-sm text-gray-500 mt-2">Somente administradores ou gestores podem acessar as configuracoes do Chat Externo.</p>
+          </div>
+        )}
+        {activeView === 'config-cadastros' && !podeConfigurarPlataforma && (
+          <div className="bg-[#202024] border border-gray-800 rounded-lg p-6">
+            <h1 className="text-lg font-bold text-white">Acesso restrito</h1>
+            <p className="text-sm text-gray-500 mt-2">Somente administradores ou gestores podem gerenciar cadastros e permissoes.</p>
+          </div>
         )}
       </main>
 
@@ -539,6 +772,16 @@ export default function App() {
           onSolicitanteChange={setSolicitante}
           onClose={() => setModalAberto(false)}
           onSubmit={salvarNovoTicket}
+        />
+      )}
+
+      {modalTarefaAberto && (
+        <NovaTarefaModal
+          form={novaTarefa}
+          usuarios={usuariosParaTarefa}
+          onChange={atualizarNovaTarefa}
+          onClose={() => setModalTarefaAberto(false)}
+          onSubmit={salvarNovaTarefa}
         />
       )}
 
