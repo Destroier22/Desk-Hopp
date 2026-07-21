@@ -119,6 +119,29 @@ const inicioDoDia = new Date();
  * 5. ROTA DE CRIAÇÃO: Cadastrar um novo Ticket no sistema
  * ⚡ Atualizada para incluir obrigatoriamente a 'categoriaId' exigida pelo novo Schema.
  */
+router.get('/tickets', async (_req, res) => {
+  try {
+    const tickets = await prisma.ticket.findMany({
+      include: {
+        empresa: true,
+        dispositivo: true,
+        categoria: true,
+        apontamentos: {
+          orderBy: { criadoEm: 'asc' }
+        }
+      },
+      orderBy: {
+        criadoEm: 'desc'
+      }
+    });
+
+    res.json(tickets);
+  } catch (error) {
+    console.error("Erro ao listar tickets:", error);
+    res.status(500).json({ erro: "Erro ao listar tickets" });
+  }
+});
+
 router.post('/tickets', async (req, res) => {
   try {
     const { assunto, descricao, empresaId, dispositivoId, categoriaId, solicitante, operador } = req.body;

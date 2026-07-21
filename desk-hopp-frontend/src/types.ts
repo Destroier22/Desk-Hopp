@@ -129,6 +129,7 @@ export interface BaseConhecimentoItem {
 }
 
 export type AppView =
+  | 'tickets-list'
   | 'fluxo-atendimento'
   | 'relatorios'
   | 'mesas-trabalho'

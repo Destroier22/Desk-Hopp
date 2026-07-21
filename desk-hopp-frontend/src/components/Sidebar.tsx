@@ -70,6 +70,7 @@ export function Sidebar({ activeView, onSelectView, usuarioLogado }: SidebarProp
   const configuracoesComResultados = submenusPlataformaFiltrados.length > 0 || submenusChatExternoFiltrados.length > 0;
   const itensFiltrados = itensMenu.filter(item => !termoBusca || `${item.texto} ${item.termos}`.toLowerCase().includes(termoBusca));
   const dashboardAtivo = activeView === 'fluxo-atendimento' || activeView === 'relatorios' || activeView === 'mesas-trabalho';
+  const ticketsAtivo = activeView === 'tickets-list';
   const configuracoesAtivas =
     activeView === 'config-cadastros' ||
     activeView === 'config-chat-externo-conectar-numero' ||
@@ -82,19 +83,29 @@ export function Sidebar({ activeView, onSelectView, usuarioLogado }: SidebarProp
     setMenuMobileAberto(false);
   };
 
+  const classeBotaoMenu = (ativo: boolean) => `w-full flex items-center rounded-md cursor-pointer transition-colors ${
+    menuAberto ? 'gap-4 px-3 py-2.5 justify-start' : 'px-0 py-2.5 justify-center'
+  } ${
+    ativo ? 'bg-blue-600 text-white font-medium' : 'hover:bg-gray-800 hover:text-gray-200'
+  }`;
+
+  const classeTextoMenu = `text-sm transition-all duration-200 whitespace-nowrap overflow-hidden ${
+    menuAberto ? 'opacity-100 max-w-44' : 'opacity-0 max-w-0'
+  }`;
+
   return (
     <div
       onMouseEnter={() => setExpandido(true)}
       onMouseLeave={() => setExpandido(false)}
-      className={`h-screen bg-[#1e1e24] border-r border-gray-800 text-gray-400 flex flex-col justify-between p-2 relative transition-all duration-300 select-none ${
-        menuAberto ? 'w-64' : 'w-16'
+      className={`sticky top-0 h-screen shrink-0 overflow-hidden bg-[#1e1e24] border-r border-gray-800 text-gray-400 flex flex-col justify-between p-2 relative transition-[width] duration-300 select-none ${
+        menuAberto ? 'w-64 min-w-64' : 'w-16 min-w-16'
       }`}
     >
       <div>
-        <div className="flex items-center justify-between h-14 px-2 mb-3">
+        <div className={`flex items-center h-14 mb-3 ${menuAberto ? 'justify-between px-2' : 'justify-center px-0'}`}>
           {menuAberto ? (
-            <span className="text-xl font-bold text-white flex items-center gap-2">
-              Desk Hopp <span className="text-xs bg-blue-600 px-1.5 py-0.5 rounded text-white font-normal">helpdesk</span>
+            <span className="text-xl font-bold text-white flex items-center gap-2 whitespace-nowrap">
+              Desk Work <span className="text-xs bg-blue-600 px-1.5 py-0.5 rounded text-white font-normal">helpdesk</span>
             </span>
           ) : (
             <div className="w-8 h-8 bg-blue-600 rounded-md flex items-center justify-center text-white font-bold text-sm mx-auto">
@@ -132,15 +143,11 @@ export function Sidebar({ activeView, onSelectView, usuarioLogado }: SidebarProp
               <button
                 type="button"
                 onClick={() => menuAberto ? setDashboardsAberto(!dashboardsAberto) : selecionarView('fluxo-atendimento')}
-                className={`w-full flex items-center gap-4 px-3 py-2.5 rounded-md cursor-pointer transition-colors ${
-                  dashboardAtivo
-                    ? 'bg-blue-600 text-white font-medium'
-                    : 'hover:bg-gray-800 hover:text-gray-200'
-                }`}
+                className={classeBotaoMenu(dashboardAtivo)}
                 title={!menuAberto ? 'Dashboards' : ''}
               >
                 <LayoutDashboard size={20} className="shrink-0" />
-                <span className={`text-sm transition-opacity duration-200 flex-1 text-left ${menuAberto ? 'opacity-100 block' : 'opacity-0 hidden'}`}>
+                <span className={`${classeTextoMenu} flex-1 text-left`}>
                   Dashboards
                 </span>
                 {menuAberto && <ChevronDown size={15} className={`transition-transform ${dashboardsAberto ? 'rotate-180' : ''}`} />}
@@ -175,18 +182,19 @@ export function Sidebar({ activeView, onSelectView, usuarioLogado }: SidebarProp
                 <button
                   type="button"
                   onClick={() => {
+                    if (item.texto === 'Tickets') selecionarView('tickets-list');
                     if (item.texto === 'Base de conhecimento') selecionarView('base-conhecimento');
                     if (item.texto === 'Configuracoes' && !menuAberto) selecionarView('config-cadastros');
                   }}
-                  className={`w-full flex items-center gap-4 px-3 py-2.5 rounded-md cursor-pointer transition-colors ${
-                    (item.texto === 'Configuracoes' && configuracoesAtivas) || (item.texto === 'Base de conhecimento' && baseConhecimentoAtiva)
-                      ? 'bg-blue-600 text-white font-medium'
-                      : 'hover:bg-gray-800 hover:text-gray-200'
-                  }`}
+                  className={classeBotaoMenu(
+                    (item.texto === 'Tickets' && ticketsAtivo) ||
+                    (item.texto === 'Configuracoes' && configuracoesAtivas) ||
+                    (item.texto === 'Base de conhecimento' && baseConhecimentoAtiva)
+                  )}
                   title={!menuAberto ? item.texto : ''}
                 >
                   <Icone size={20} className="shrink-0" />
-                  <span className={`text-sm transition-opacity duration-200 ${menuAberto ? 'opacity-100 block' : 'opacity-0 hidden'}`}>
+                  <span className={classeTextoMenu}>
                     {item.texto}
                   </span>
                 </button>
@@ -196,15 +204,11 @@ export function Sidebar({ activeView, onSelectView, usuarioLogado }: SidebarProp
                     <button
                       type="button"
                       onClick={() => selecionarView('chat-interno')}
-                      className={`w-full flex items-center gap-4 px-3 py-2.5 rounded-md cursor-pointer transition-colors ${
-                        activeView === 'chat-interno' || activeView === 'chat-externo' || activeView === 'telefone'
-                          ? 'bg-blue-600 text-white font-medium'
-                          : 'hover:bg-gray-800 hover:text-gray-200'
-                      }`}
+                      className={classeBotaoMenu(activeView === 'chat-interno' || activeView === 'chat-externo' || activeView === 'telefone')}
                       title={!menuAberto ? 'Comunicacao' : ''}
                     >
                       <MessageSquare size={20} className="shrink-0" />
-                      <span className={`text-sm transition-opacity duration-200 flex-1 text-left ${menuAberto ? 'opacity-100 block' : 'opacity-0 hidden'}`}>
+                      <span className={`${classeTextoMenu} flex-1 text-left`}>
                         Comunicacao
                       </span>
                     </button>

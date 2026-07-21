@@ -25,7 +25,7 @@ export function LoginScreen({
       <div className="w-full max-w-sm bg-[#1e1e24] border border-gray-800 rounded-lg p-6 shadow-2xl">
         <div className="mb-7 text-center">
           <div className="w-12 h-12 mx-auto mb-3 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-lg">H</div>
-          <h1 className="text-2xl font-bold tracking-wide">Desk Hopp</h1>
+          <h1 className="text-2xl font-bold tracking-wide">Desk Work</h1>
           <p className="text-xs text-gray-500 mt-1">Acesso ao helpdesk</p>
         </div>
 

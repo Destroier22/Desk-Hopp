@@ -4,6 +4,7 @@ import { AppHeader } from './components/AppHeader';
 import { KanbanBoard } from './components/KanbanBoard';
 import { LoginScreen } from './components/LoginScreen';
 import { Sidebar } from './components/Sidebar';
+import { TicketsList } from './components/TicketsList';
 import { BaseConhecimento } from './components/base/BaseConhecimento';
 import { ChatExternoWhatsApp } from './components/chat/ChatExternoWhatsApp';
 import { ChatInterno } from './components/chat/ChatInterno';
@@ -35,6 +36,97 @@ import type {
 } from './types';
 import { escaparHtml, formatarDataRelatorio, formatarMoeda, formatarTempoRelatorio } from './utils/formatters';
 
+const tarefasDemo: TarefaKanban[] = [
+  {
+    id: 'demo-tarefa-1',
+    codigo: 'TAR-0001',
+    titulo: 'Revisar permissões dos usuários de suporte',
+    descricao: 'Conferir categorias, acessos e permissões antes da apresentação do portfólio.',
+    responsavelId: 'demo',
+    responsavelNome: 'Eduarda Nunes',
+    solicitante: 'Administração',
+    prioridade: 'Alta',
+    categoria: 'Melhoria interna',
+    projeto: 'Desk Work',
+    prazo: '2026-07-20',
+    estimativaHoras: '2',
+    etiquetas: ['permissões', 'usuários'],
+    checklist: ['Validar perfis', 'Testar acesso restrito', 'Registrar ajustes'],
+    observadores: 'Gestores',
+    linkReferencia: '',
+    recorrencia: 'Nao recorrente',
+    lembrete: '',
+    status: 'A_FAZER',
+    criadoEm: new Date().toISOString(),
+  },
+  {
+    id: 'demo-tarefa-2',
+    codigo: 'TAR-0002',
+    titulo: 'Montar artigos iniciais da Base de Conhecimento',
+    descricao: 'Criar estrutura de pastas e arquivos para procedimentos comuns de atendimento.',
+    responsavelId: 'demo',
+    responsavelNome: 'Ana Beatriz Lima',
+    solicitante: 'Equipe de suporte',
+    prioridade: 'Media',
+    categoria: 'Documentacao',
+    projeto: 'Base de Conhecimento',
+    prazo: '2026-07-22',
+    estimativaHoras: '3',
+    etiquetas: ['documentação', 'base'],
+    checklist: ['Criar pasta de processos', 'Criar artigo de atendimento', 'Enviar para aprovação'],
+    observadores: 'Suporte',
+    linkReferencia: '',
+    recorrencia: 'Nao recorrente',
+    lembrete: '',
+    status: 'ATENDENDO',
+    criadoEm: new Date().toISOString(),
+  },
+  {
+    id: 'demo-tarefa-3',
+    codigo: 'TAR-0003',
+    titulo: 'Validar QR Code de conexão WhatsApp',
+    descricao: 'Testar fluxo visual de conexão e registrar pontos pendentes para integração real.',
+    responsavelId: 'demo',
+    responsavelNome: 'Bruno Carvalho',
+    solicitante: 'Produto',
+    prioridade: 'Critica',
+    categoria: 'Desenvolvimento',
+    projeto: 'Chat Externo',
+    prazo: '2026-07-18',
+    estimativaHoras: '4',
+    etiquetas: ['whatsapp', 'integração'],
+    checklist: ['Abrir tela conexão', 'Validar status', 'Registrar falhas'],
+    observadores: 'Administração',
+    linkReferencia: '',
+    recorrencia: 'Nao recorrente',
+    lembrete: '',
+    status: 'PAUSADO',
+    criadoEm: new Date().toISOString(),
+  },
+  {
+    id: 'demo-tarefa-4',
+    codigo: 'TAR-0004',
+    titulo: 'Conferir listagem de tickets por data',
+    descricao: 'Validar ordenação do mais novo ao mais antigo e abertura do detalhe pelo clique.',
+    responsavelId: 'demo',
+    responsavelNome: 'Camila Rocha',
+    solicitante: 'QA',
+    prioridade: 'Baixa',
+    categoria: 'Operacional',
+    projeto: 'Tickets',
+    prazo: '2026-07-24',
+    estimativaHoras: '1',
+    etiquetas: ['qa', 'tickets'],
+    checklist: ['Abrir menu Tickets', 'Checar ordem', 'Abrir detalhe'],
+    observadores: '',
+    linkReferencia: '',
+    recorrencia: 'Nao recorrente',
+    lembrete: '',
+    status: 'CONCLUIDO',
+    criadoEm: new Date().toISOString(),
+  },
+];
+
 export default function App() {
   const [kanban, setKanban] = useState<KanbanData>({
     aFazer: [], atendendo: [], pausados: [], concluidosDoDia: [],
@@ -53,6 +145,7 @@ export default function App() {
   });
 
   const [ticketSelecionado, setTicketSelecionado] = useState<Ticket | null>(null);
+  const [listaTickets, setListaTickets] = useState<Ticket[]>([]);
   const [modoEdicao, setModoEdicao] = useState(false);
   const [modalApontamentoAberto, setModalApontamentoAberto] = useState(false);
   const [ticketParaApontar, setTicketParaApontar] = useState<{ id: string; novoStatus: string } | null>(null);
@@ -84,7 +177,11 @@ export default function App() {
   const [usuarios, setUsuarios] = useState<UsuarioLogado[]>([]);
   const [tarefasKanban, setTarefasKanban] = useState<TarefaKanban[]>(() => {
     const salvo = localStorage.getItem('deskhopp:tarefas-kanban');
-    return salvo ? JSON.parse(salvo) : [];
+    if (!salvo) return tarefasDemo;
+
+    const tarefasSalvas = JSON.parse(salvo) as TarefaKanban[];
+    const idsSalvos = new Set(tarefasSalvas.map(tarefa => tarefa.id));
+    return [...tarefasDemo.filter(tarefa => !idsSalvos.has(tarefa.id)), ...tarefasSalvas];
   });
   const criarFormTarefaInicial = (responsavelId = '', solicitanteNome = ''): NovaTarefaForm => ({
     titulo: '',
@@ -168,11 +265,15 @@ export default function App() {
   const carregarTickets = useCallback(async () => {
     try {
       setCarregando(true);
-      const resposta = await api.get<KanbanData>('/tickets/kanban');
-      setKanban(resposta.data);
+      const [respostaKanban, respostaTickets] = await Promise.all([
+        api.get<KanbanData>('/tickets/kanban'),
+        api.get<Ticket[]>('/tickets'),
+      ]);
+      setKanban(respostaKanban.data);
+      setListaTickets(respostaTickets.data);
 
       if (ticketSelecionado) {
-        const todos = [...resposta.data.aFazer, ...resposta.data.atendendo, ...resposta.data.pausados, ...resposta.data.concluidosDoDia];
+        const todos = respostaTickets.data;
         const atualizado = todos.find(t => t.id === ticketSelecionado.id);
         if (atualizado) {
           setTicketSelecionado(prev => prev ? {
@@ -538,7 +639,7 @@ export default function App() {
             </table>
           </section>
 
-          <footer>Desk-Hopp Helpdesk - relatorio gerado para impressao/salvamento em PDF.</footer>
+          <footer>Desk Work Helpdesk - relatorio gerado para impressao/salvamento em PDF.</footer>
           <script>
             window.onload = function () {
               window.focus();
@@ -638,6 +739,7 @@ export default function App() {
   }
 
   const tituloTela = {
+    'tickets-list': 'Tickets',
     'fluxo-atendimento': 'Fluxo de Atendimento',
     relatorios: 'Relatorios',
     'mesas-trabalho': 'Mesas de Trabalho',
@@ -686,6 +788,9 @@ export default function App() {
 
         {activeView === 'fluxo-atendimento' && (
           <KanbanBoard kanban={kanban} tarefas={tarefasKanban} onAbrirDetalhes={abrirDetalhesTicket} />
+        )}
+        {activeView === 'tickets-list' && (
+          <TicketsList tickets={listaTickets} onAbrirDetalhes={abrirDetalhesTicket} />
         )}
         {activeView === 'relatorios' && (
           <RelatoriosDashboard kanban={kanban} />

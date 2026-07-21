@@ -102,7 +102,7 @@ export function ConectarNumeroWhatsApp() {
       <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-white">Conexao - Chat Externo</h1>
-          <p className="text-xs text-gray-500">Conecte o WhatsApp Business ao Desk Hopp por API oficial ou por pareamento QR em bridge propria.</p>
+          <p className="text-xs text-gray-500">Conecte o WhatsApp Business ao Desk Work por API oficial ou por pareamento QR em bridge propria.</p>
         </div>
         <button onClick={() => { carregarStatus(); carregarBridge(); }} className="self-start lg:self-auto bg-[#202024] border border-gray-700 text-gray-300 px-3 py-2 rounded text-xs flex items-center gap-2 hover:bg-gray-800">
           <RefreshCw size={14} /> Atualizar status
