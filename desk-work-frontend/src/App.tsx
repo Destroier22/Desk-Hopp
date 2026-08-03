@@ -136,11 +136,11 @@ export default function App() {
   const [modalAberto, setModalAberto] = useState(false);
   const [modalTarefaAberto, setModalTarefaAberto] = useState(false);
   const [notificacoesAtivas, setNotificacoesAtivas] = useState<boolean>(() => {
-    const salvo = localStorage.getItem('deskhopp:notificacoes');
+    const salvo = localStorage.getItem('deskwork:notificacoes');
     return salvo ? JSON.parse(salvo) : true;
   });
   const [autoRefresh, setAutoRefresh] = useState<boolean>(() => {
-    const salvo = localStorage.getItem('deskhopp:autorefresh');
+    const salvo = localStorage.getItem('deskwork:autorefresh');
     return salvo ? JSON.parse(salvo) : false;
   });
 
@@ -166,7 +166,7 @@ export default function App() {
   const [solicitante, setSolicitante] = useState('');
 
   const [usuarioLogado, setUsuarioLogado] = useState<UsuarioLogado | null>(() => {
-    const salvo = localStorage.getItem('deskhopp:usuario');
+    const salvo = localStorage.getItem('deskwork:usuario');
     return salvo ? JSON.parse(salvo) : null;
   });
   const [emailLogin, setEmailLogin] = useState('');
@@ -176,7 +176,7 @@ export default function App() {
   const [activeView, setActiveView] = useState<AppView>('fluxo-atendimento');
   const [usuarios, setUsuarios] = useState<UsuarioLogado[]>([]);
   const [tarefasKanban, setTarefasKanban] = useState<TarefaKanban[]>(() => {
-    const salvo = localStorage.getItem('deskhopp:tarefas-kanban');
+    const salvo = localStorage.getItem('deskwork:tarefas-kanban');
     if (!salvo) return tarefasDemo;
 
     const tarefasSalvas = JSON.parse(salvo) as TarefaKanban[];
@@ -541,7 +541,7 @@ export default function App() {
       });
 
       setUsuarioLogado(resposta.data.usuario);
-      localStorage.setItem('deskhopp:usuario', JSON.stringify(resposta.data.usuario));
+      localStorage.setItem('deskwork:usuario', JSON.stringify(resposta.data.usuario));
       setSenhaLogin('');
     } catch (error) {
       console.error(error);
@@ -553,7 +553,7 @@ export default function App() {
 
   const sairDoSistema = () => {
     setUsuarioLogado(null);
-    localStorage.removeItem('deskhopp:usuario');
+    localStorage.removeItem('deskwork:usuario');
     fecharDetalhesTicket();
   };
 
@@ -695,15 +695,15 @@ export default function App() {
   }, [empresaSelecionadaId]);
 
   useEffect(() => {
-    localStorage.setItem('deskhopp:autorefresh', JSON.stringify(autoRefresh));
+    localStorage.setItem('deskwork:autorefresh', JSON.stringify(autoRefresh));
   }, [autoRefresh]);
 
   useEffect(() => {
-    localStorage.setItem('deskhopp:notificacoes', JSON.stringify(notificacoesAtivas));
+    localStorage.setItem('deskwork:notificacoes', JSON.stringify(notificacoesAtivas));
   }, [notificacoesAtivas]);
 
   useEffect(() => {
-    localStorage.setItem('deskhopp:tarefas-kanban', JSON.stringify(tarefasKanban));
+    localStorage.setItem('deskwork:tarefas-kanban', JSON.stringify(tarefasKanban));
   }, [tarefasKanban]);
 
   useEffect(() => {

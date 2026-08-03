@@ -1,7 +1,7 @@
 {
-  "name": "desk-hopp-backend",
+  "name": "desk-work-backend",
   "version": "1.0.0",
-  "description": "Back-end do sistema de Helpdesk Desk Hopp",
+  "description": "Back-end do sistema de Helpdesk Desk Work",
   "main": "dist/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",

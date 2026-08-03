@@ -78,7 +78,7 @@ export function LoginScreen({
         </form>
 
         <div className="mt-5 text-[11px] text-gray-500 border-t border-gray-800 pt-4">
-          Teste: admin@deskhopp.local / 123456
+          Teste: admin@deskwork.local / 123456
         </div>
       </div>
     </div>

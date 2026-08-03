@@ -38,7 +38,7 @@ interface BaseConhecimentoProps {
 
 export function BaseConhecimento({ podeAdministrar }: BaseConhecimentoProps) {
   const [itens, setItens] = useState<BaseConhecimentoItem[]>(() => {
-    const salvo = localStorage.getItem('deskhopp:base-conhecimento');
+    const salvo = localStorage.getItem('deskwork:base-conhecimento');
     return salvo ? JSON.parse(salvo) : itensIniciais;
   });
   const [pastaAtualId, setPastaAtualId] = useState(raizId);
@@ -50,7 +50,7 @@ export function BaseConhecimento({ podeAdministrar }: BaseConhecimentoProps) {
 
   const salvarItens = (novosItens: BaseConhecimentoItem[]) => {
     setItens(novosItens);
-    localStorage.setItem('deskhopp:base-conhecimento', JSON.stringify(novosItens));
+    localStorage.setItem('deskwork:base-conhecimento', JSON.stringify(novosItens));
   };
 
   const pastaAtual = itens.find(item => item.id === pastaAtualId) || itens[0];

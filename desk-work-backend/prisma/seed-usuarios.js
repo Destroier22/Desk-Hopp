@@ -10,11 +10,11 @@ function gerarSenhaHash(senha) {
 }
 
 const usuarios = [
-  ['Administrador Teste', 'admin@deskhopp.local', 'Administrador'],
-  ['Suporte Teste', 'suporte@deskhopp.local', 'Suporte'],
-  ['Financeiro Teste', 'financeiro@deskhopp.local', 'Financeiro'],
-  ['Gestor Financeiro Teste', 'gestor.financeiro@deskhopp.local', 'Gestor Financeiro'],
-  ['Gestor Suporte Teste', 'gestor.suporte@deskhopp.local', 'Gestor Suporte'],
+  ['Administrador Teste', 'admin@deskwork.local', 'Administrador'],
+  ['Suporte Teste', 'suporte@deskwork.local', 'Suporte'],
+  ['Financeiro Teste', 'financeiro@deskwork.local', 'Financeiro'],
+  ['Gestor Financeiro Teste', 'gestor.financeiro@deskwork.local', 'Gestor Financeiro'],
+  ['Gestor Suporte Teste', 'gestor.suporte@deskwork.local', 'Gestor Suporte'],
 ];
 
 async function main() {

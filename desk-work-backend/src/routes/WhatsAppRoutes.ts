@@ -6,7 +6,7 @@ const router = Router();
 const graphVersion = process.env.WHATSAPP_GRAPH_VERSION || 'v21.0';
 const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
 const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-const verifyToken = process.env.WHATSAPP_VERIFY_TOKEN || 'desk-hopp-whatsapp';
+const verifyToken = process.env.WHATSAPP_VERIFY_TOKEN || 'desk-work-whatsapp';
 
 router.get('/whatsapp/status', (_req, res) => {
   res.json({

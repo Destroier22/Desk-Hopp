@@ -47,7 +47,7 @@ class WhatsAppBridgeService {
 
     this.client = new Client({
       authStrategy: new LocalAuth({
-        clientId: 'desk-hopp-chat-externo',
+        clientId: 'desk-work-chat-externo',
         dataPath: path.resolve(process.cwd(), '.wwebjs_auth'),
       }),
       puppeteer: puppeteerOptions,

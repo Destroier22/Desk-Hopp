@@ -21,13 +21,13 @@ app.use(whatsAppRoutes);
 // Rota inicial apenas para teste rápido no navegador
 app.get('/', (req, res) => {
   res.json({
-    mensagem: "API do Desk Hopp rodando com suporte a rotas, CORS e modelo relacional de TI! 🚀"
+    mensagem: "API do Desk Work rodando com suporte a rotas, CORS e modelo relacional de TI! 🚀"
   });
 });
 
 app.listen(PORT, () => {
   console.log(`=========================================`);
-  console.log(`  Desk Hopp Back-end Inicializado! 🔥     `);
+  console.log(`  Desk Work Back-end Inicializado! 🔥     `);
   console.log(`  Servidor rodando em: http://localhost:${PORT} `);
   console.log(`=========================================`);
 });
